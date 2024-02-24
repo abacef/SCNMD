@@ -7,13 +7,21 @@ def run_command(command):
     return p.stdout.decode()
 
 cpu_cores = int(run_command("cat /proc/cpuinfo | grep processor | wc -l"))
+ticks_per_second = int(run_command("getconf CLK_TCK"))
 
-
+prev_sum = None
 while True:
-    uptime_output = run_command("cat /proc/uptime").split()
-    uptime_seconds = float(uptime_output[0])
-    cpu_time_seconds = float(uptime_output[1])
-    cpu_percent = (cpu_time_seconds / cpu_cores) / uptime_seconds
-    print(cpu_percent)
+    stat_output = run_command("cat /proc/stat").split("\n")[0].split()[1:]
+    usr = int(stat_output[0])
+    nice = int(stat_output[1])
+    sys = int(stat_output[2])
+    cnt_sum = usr + nice + sys
+    if prev_sum is None:
+        prev_sum = cnt_sum
+        sleep(1)
+    diff = cnt_sum - prev_sum
+    prev_sum = cnt_sum
+    print((diff / ticks_per_second / cpu_cores) * 100)
     sleep(1)
+
 
