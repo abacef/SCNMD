@@ -1,4 +1,4 @@
-mod free_output;
+mod memory;
 
 use std::process::Command;
 use std::{thread, time};
@@ -87,7 +87,7 @@ fn monitor_cpu_usage() {
 fn monitor_memory_usage() {
     loop {
         let free_output = run_command("free -w");
-        let free_output_struct = free_output::FreeOutput::from_free_command(free_output);
+        let free_output_struct = memory::FreeOutput::from_free_command(free_output);
         println!("{:?}", free_output_struct);
         thread::sleep(time::Duration::from_secs(5));
     }
