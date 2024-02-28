@@ -1,3 +1,5 @@
+mod free_output;
+
 use std::process::Command;
 use std::{thread, time};
 
@@ -43,7 +45,7 @@ fn sum_cpu_usage_from_stat(stat_str: String) -> usize {
     usr + nice + sys + hirq + sirq
 }
 
-fn main() {
+fn monitor_cpu_usage() {
     let cpu_cores = run_command("cat /proc/cpuinfo | grep processor | wc -l")
         .trim()
         .parse::<usize>()
@@ -80,4 +82,20 @@ fn main() {
         println!("{}", (cpu_ticks_used as f64 / cpu_ticks_available) * 100.0);
         thread::sleep(time::Duration::from_secs(5));
     }
+}
+
+fn monitor_memory_usage() {
+    loop {
+        let free_output = run_command("free -w");
+        let free_output_struct = free_output::FreeOutput::from_free_command(free_output);
+        println!("{:?}", free_output_struct);
+        thread::sleep(time::Duration::from_secs(5));
+    }
+
+}
+
+#[tokio::main]
+async fn main() {
+    // monitor_cpu_usage();
+    monitor_memory_usage();
 }
