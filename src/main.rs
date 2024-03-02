@@ -2,6 +2,8 @@ mod memory;
 
 use std::process::Command;
 use std::{thread, time};
+use futures::future;
+use tokio::join;
 
 fn run_command(command: &str) -> String {
     let output = Command::new("sh")
@@ -45,7 +47,7 @@ fn sum_cpu_usage_from_stat(stat_str: String) -> usize {
     usr + nice + sys + hirq + sirq
 }
 
-fn monitor_cpu_usage() {
+async fn monitor_cpu_usage() {
     let cpu_cores = run_command("cat /proc/cpuinfo | grep processor | wc -l")
         .trim()
         .parse::<usize>()
@@ -67,7 +69,7 @@ fn monitor_cpu_usage() {
         if prev_sum.is_none() {
             prev_sum = Some(cnt_sum);
             prev_uptime = Some(curr_uptime);
-            thread::sleep(time::Duration::from_secs(5));
+            tokio::time::sleep(time::Duration::from_secs(5)).await;
             continue;
         }
 
@@ -80,22 +82,20 @@ fn monitor_cpu_usage() {
         let wall_ticks_passed = ticks_per_second as f64 * wall_seconds_used;
         let cpu_ticks_available = wall_ticks_passed * cpu_cores as f64;
         println!("{}", (cpu_ticks_used as f64 / cpu_ticks_available) * 100.0);
-        thread::sleep(time::Duration::from_secs(5));
+        tokio::time::sleep(time::Duration::from_secs(5)).await;
     }
 }
 
-fn monitor_memory_usage() {
+async fn monitor_memory_usage() {
     loop {
         let free_output = run_command("free -w");
         let free_output_struct = memory::FreeOutput::from_free_command(free_output);
         println!("{:?}", free_output_struct);
-        thread::sleep(time::Duration::from_secs(5));
+        tokio::time::sleep(time::Duration::from_secs(5)).await;
     }
-
 }
 
 #[tokio::main]
 async fn main() {
-    // monitor_cpu_usage();
-    monitor_memory_usage();
+    join!(monitor_cpu_usage(), monitor_memory_usage());
 }

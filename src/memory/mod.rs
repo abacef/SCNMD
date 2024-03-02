@@ -80,7 +80,7 @@ impl FreeOutput {
     }
 
     pub fn print(&self) {
-
+        &self.non_swap_row;
     }
 }
 
