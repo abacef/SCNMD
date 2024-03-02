@@ -1,9 +1,9 @@
 mod memory;
 
 use std::process::Command;
-use std::{thread, time};
-use futures::future;
 use tokio::join;
+use tokio::time::sleep;
+use tokio::time::Duration;
 
 fn run_command(command: &str) -> String {
     let output = Command::new("sh")
@@ -69,7 +69,7 @@ async fn monitor_cpu_usage() {
         if prev_sum.is_none() {
             prev_sum = Some(cnt_sum);
             prev_uptime = Some(curr_uptime);
-            tokio::time::sleep(time::Duration::from_secs(5)).await;
+            sleep(Duration::from_secs(5)).await;
             continue;
         }
 
@@ -82,7 +82,7 @@ async fn monitor_cpu_usage() {
         let wall_ticks_passed = ticks_per_second as f64 * wall_seconds_used;
         let cpu_ticks_available = wall_ticks_passed * cpu_cores as f64;
         println!("{}", (cpu_ticks_used as f64 / cpu_ticks_available) * 100.0);
-        tokio::time::sleep(time::Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(5)).await;
     }
 }
 
@@ -91,7 +91,7 @@ async fn monitor_memory_usage() {
         let free_output = run_command("free -w");
         let free_output_struct = memory::FreeOutput::from_free_command(free_output);
         println!("{:?}", free_output_struct);
-        tokio::time::sleep(time::Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(5)).await;
     }
 }
 
