@@ -1,34 +1,32 @@
 mod memory;
 
-use std::process::Command;
-use tokio::join;
+use tokio::process::Command;
 use tokio::time::sleep;
 use tokio::time::Duration;
+use tokio::{fs, join};
 
-fn run_command(command: &str) -> String {
+async fn run_command(command: &str) -> String {
     let output = Command::new("sh")
         .arg("-c")
         .arg(command)
         .output()
-        .expect("Failed to execute command");
+        .await.unwrap();
     String::from_utf8(output.stdout).expect("Invalid UTF-8")
 }
 
-fn uptime() -> f64 {
-    run_command("cat /proc/uptime")
-        .split_whitespace()
+async fn uptime() -> f64 {
+    fs::read_to_string("/proc/uptime")
+        .await
+        .unwrap()
+        .split_ascii_whitespace()
         .next()
         .unwrap()
-        .parse()
+        .parse::<f64>()
         .unwrap()
 }
 
 fn sum_cpu_usage_from_stat(stat_str: String) -> usize {
-    let mut stat_output = stat_str
-        .lines()
-        .next()
-        .unwrap()
-        .split_whitespace();
+    let mut stat_output = stat_str.lines().next().unwrap().split_whitespace();
 
     // Skip the column that just says "cpu"
     stat_output.next();
@@ -48,11 +46,11 @@ fn sum_cpu_usage_from_stat(stat_str: String) -> usize {
 }
 
 async fn monitor_cpu_usage() {
-    let cpu_cores = run_command("cat /proc/cpuinfo | grep processor | wc -l")
+    let cpu_cores = run_command("cat /proc/cpuinfo | grep processor | wc -l").await
         .trim()
         .parse::<usize>()
         .unwrap();
-    let ticks_per_second = run_command("getconf CLK_TCK")
+    let ticks_per_second = run_command("getconf CLK_TCK").await
         .trim()
         .parse::<usize>()
         .unwrap();
@@ -61,8 +59,8 @@ async fn monitor_cpu_usage() {
     let mut prev_uptime = None;
 
     loop {
-        let stat_str = run_command("cat /proc/stat");
-        let curr_uptime = uptime();
+        let stat_str = run_command("cat /proc/stat").await;
+        let curr_uptime = uptime().await;
 
         let cnt_sum = sum_cpu_usage_from_stat(stat_str);
 
@@ -88,7 +86,7 @@ async fn monitor_cpu_usage() {
 
 async fn monitor_memory_usage() {
     loop {
-        let free_output = run_command("free -w");
+        let free_output = run_command("free -w").await;
         let free_output_struct = memory::FreeOutput::from_free_command(free_output);
         println!("{:?}", free_output_struct);
         sleep(Duration::from_secs(5)).await;

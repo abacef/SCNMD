@@ -13,7 +13,7 @@ impl FreeOutput {
         Self::validate_header_row(header_row);
 
         let mut non_swap_row_iter = free_output_lines.next().unwrap().split_whitespace();
-        non_swap_row_iter.next();  // Mem:
+        non_swap_row_iter.next(); // Mem:
 
         let total = Self::get_next_cell(&mut non_swap_row_iter);
         let used = Self::get_next_cell(&mut non_swap_row_iter);
@@ -30,11 +30,11 @@ impl FreeOutput {
             shared,
             buffers,
             cache,
-            available
+            available,
         };
 
         let mut swap_row_iter = free_output_lines.next().unwrap().split_whitespace();
-        swap_row_iter.next();  // Swap:
+        swap_row_iter.next(); // Swap:
 
         let swap_total = Self::get_next_cell(&mut swap_row_iter);
         let swap_used = Self::get_next_cell(&mut swap_row_iter);
@@ -43,7 +43,7 @@ impl FreeOutput {
         let swap_row = SwapRow {
             swap_total,
             swap_used,
-            swap_free
+            swap_free,
         };
 
         FreeOutput {
@@ -94,7 +94,6 @@ struct NonSwapRow {
     cache: u64,
     available: u64,
 }
-
 
 #[derive(Debug)]
 struct SwapRow {
