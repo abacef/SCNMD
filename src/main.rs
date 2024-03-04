@@ -3,38 +3,26 @@ mod memory;
 mod utils;
 
 use crate::cpu::CpuReading;
-use crate::utils::run_command;
+use crate::utils::{get_cpu_cores, get_cpu_tics_per_second, run_command};
 use tokio::join;
 use tokio::time::sleep;
 use tokio::time::Duration;
 
 async fn monitor_cpu_usage() {
-    let cpu_cores = run_command("cat /proc/cpuinfo | grep processor | wc -l")
-        .await
-        .trim()
-        .parse::<usize>()
-        .unwrap();
-    let ticks_per_second = run_command("getconf CLK_TCK")
-        .await
-        .trim()
-        .parse::<usize>()
-        .unwrap();
+    let ticks_per_second = get_cpu_tics_per_second().await;
+    let cpu_cores = get_cpu_cores().await;
 
     let mut last_reading = CpuReading::create().await;
-
     loop {
         sleep(Duration::from_secs(5)).await;
 
         let curr_reading = CpuReading::create().await;
-
-        let wall_seconds_used = curr_reading.uptime - last_reading.uptime;
-        let cpu_ticks_used = curr_reading.cpu_ticks_used_sum - last_reading.cpu_ticks_used_sum;
+        let cpu_usage_between =
+            curr_reading.get_cpu_usage_between(last_reading, ticks_per_second, cpu_cores);
 
         last_reading = curr_reading;
 
-        let wall_ticks_passed = ticks_per_second as f64 * wall_seconds_used;
-        let cpu_ticks_available = wall_ticks_passed * cpu_cores as f64;
-        println!("{}", (cpu_ticks_used as f64 / cpu_ticks_available) * 100.0);
+        println!("{}", cpu_usage_between);
     }
 }
 
