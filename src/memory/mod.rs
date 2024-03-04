@@ -78,10 +78,6 @@ impl FreeOutput {
     fn get_next_cell(row: &mut SplitWhitespace) -> u64 {
         row.next().unwrap().parse::<u64>().unwrap()
     }
-
-    pub fn print(&self) {
-        &self.non_swap_row;
-    }
 }
 
 #[derive(Debug)]

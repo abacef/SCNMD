@@ -8,6 +8,14 @@ use tokio::join;
 use tokio::time::sleep;
 use tokio::time::Duration;
 
+use serde::{Deserialize, Serialize};
+use serde_json;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CpuUsed {
+    cpu_used: f64,
+}
+
 async fn monitor_cpu_usage() {
     let ticks_per_second = get_cpu_tics_per_second().await;
     let cpu_cores = get_cpu_cores().await;
@@ -23,6 +31,19 @@ async fn monitor_cpu_usage() {
         last_reading = curr_reading;
 
         println!("{}", cpu_usage_between);
+
+        let cpu_usage_struct = CpuUsed {
+            cpu_used: cpu_usage_between,
+        };
+        let json_string = serde_json::to_string(&cpu_usage_struct).unwrap();
+        let client = reqwest::Client::new();
+        let response = client
+            .post("http://localhost:8000/metric_data/cpu_usage")
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(json_string.to_owned())
+            .send()
+            .await;
+        println!("Response status: {:?}", response);
     }
 }
 
